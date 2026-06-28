@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Record System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f7f6; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 8px; flex: 1; min-width: 150px; }
+        button { padding: 8px 15px; background: #28a745; color: white; border: none; cursor: pointer; }
+        button.delete-btn { background: #dc3545; }
+        button.edit-btn { background: #007bff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .error { color: red; margin-bottom: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎓 Student Record System</h2>
+    
+    <div id="error-msg" class="error"></div>
+
+    <form id="student-form">
+        <input type="hidden" id="student-id">
+        <input type="text" id="student-name" placeholder="Full Name" required>
+        <input type="email" id="student-email" placeholder="Email Address" required>
+        <input type="text" id="student-course" placeholder="Course" required>
+        <button type="submit" id="submit-btn">Add Student</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Course</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="student-table-body"></tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = '/api/students';
+    const form = document.getElementById('student-form');
+    const tableBody = document.getElementById('student-table-body');
+    const errorMsg = document.getElementById('error-msg');
+
+    // Fetch and display students (READ)
+    async function fetchStudents() {
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            tableBody.innerHTML = '';
+            data.forEach(student => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${student.id}</td>
+                        <td>${student.name}</td>
+                        <td>${student.email}</td>
+                        <td>${student.course}</td>
+                        <td>
+                            <button class="edit-btn" onclick="editStudent(${student.id}, '${student.name}', '${student.email}', '${student.course}')">Edit</button>
+                            <button class="delete-btn" onclick="deleteStudent(${student.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (err) {
+            showError('Failed to fetch data.');
+        }
+    }
+
+    // Handle Form Submission (CREATE & UPDATE)
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.textContent = '';
+        
+        const id = document.getElementById('student-id').value;
+        const name = document.getElementById('student-name').value;
+        const email = document.getElementById('student-email').value;
+        const course = document.getElementById('student-course').value;
+
+        const payload = { name, email, course };
+        
+        try {
+            let response;
+            if (id) {
+                // UPDATE (PUT)
+                response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                // CREATE (POST)
+                response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Operation failed');
+            
+            form.reset();
+            document.getElementById('student-id').value = '';
+            document.getElementById('submit-btn').textContent = 'Add Student';
+            fetchStudents();
+        } catch (err) {
+            showError(err.message);
+        }
+    });
+
+    // Setup form for editing
+    function editStudent(id, name, email, course) {
+        document.getElementById('student-id').value = id;
+        document.getElementById('student-name').value = name;
+        document.getElementById('student-email').value = email;
+        document.getElementById('student-course').value = course;
+        document.getElementById('submit-btn').textContent = 'Update Student';
+    }
+
+    // Handle Deletion (DELETE)
+    async function deleteStudent(id) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+                fetchStudents();
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+    }
+
+    // Initial load
+    fetchStudents();
+</script>
+</body>
+</html>
