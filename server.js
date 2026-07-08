@@ -88,7 +88,7 @@ app.delete('/api/students/:id', (req, res) => {
     const { id } = req.params;
 
     // Fixed: Target correct table name
-    db.query('DELETE FROM students WHERE id = $1', [id], (err, result) => {
+    pool.query('DELETE FROM students WHERE id = $1', [id], (err, result) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ error: 'Database error occurred.' });
@@ -99,6 +99,13 @@ app.delete('/api/students/:id', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-// Fixed: Added backticks to string interpolation syntax
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// --- REPLACE THE BOTTOM OF THE FILE WITH THIS ---
+
+// Export the app context so Vercel can handle it in production
+module.exports = app;
+
+// Only listen locally during development testing
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+}
