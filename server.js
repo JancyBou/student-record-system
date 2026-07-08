@@ -12,12 +12,11 @@ app.use(express.static('public'));
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false 
+        rejectUnauthorized: false // <-- CRITICAL: Tell them to make sure this block is present!
     }
 });
-
 // Test Connection
-db.connect((err, client, release) => {
+pool.connect((err, client, release) => {
     if (err) {
         console.error('Database connection failed: ' + err.stack);
         return;
@@ -37,7 +36,7 @@ app.post('/api/students', (req, res) => {
 
     // Fixed: Matches your table structure (students)
     const query = 'INSERT INTO students (first_name, last_name, email, age, course) VALUES ($1, $2, $3, $4, $5) RETURNING id';
-    db.query(query, [firstName, lastName, email, age || null, course || null], (err, result) => {
+    pool.query(query, [firstName, lastName, email, age || null, course || null], (err, result) => {
         if (err) {
             if (err.code === '23505') {
                 return res.status(400).json({ error: 'Email already exists.' });
