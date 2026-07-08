@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.static('public')); 
 
 // Fixed: Configured for Neon using single connectionString + SSL
-const db = new Pool({
+const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false 
